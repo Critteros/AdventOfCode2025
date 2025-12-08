@@ -1,64 +1,57 @@
-use std::char;
-
 fn main() {
     const INPUT: &str = include_str!("../input.txt");
-    let map: Vec<Vec<char>> = INPUT.lines().map(|line| line.chars().collect()).collect();
+    let mut map: Vec<Vec<String>> = INPUT
+        .lines()
+        .map(|line| line.chars().map(|symbol| symbol.to_string()).collect())
+        .collect();
 
-    println!("Initial map");
-    print_map(&map);
-    println!("\n\n");
-
-    let count = advance_map(map.clone(), 1);
-
-    println!("Count => {count}")
-}
-
-fn advance_map(mut map: Vec<Vec<char>>, line_to_advance: usize) -> usize {
-    if line_to_advance == map.len() {
-        // print_map(&map);
-        // println!("");
-        // print!("+");
-        return 1;
+    let start_index = map[0].iter().position(|el| *el == "S");
+    if let Some(index) = start_index {
+        map[0][index] = "1".to_string();
     }
 
+    print_map(&map);
+
+    for i in 1..map.len() {
+        println!("");
+        advance_map(&mut map, i);
+        print_map(&map);
+        println!("");
+    }
+
+    let sum: u64 = map[map.len() - 1]
+        .iter()
+        .map(|number| number.parse::<u64>().unwrap_or_default())
+        .sum();
+    println!("sum -> {sum}");
+}
+
+fn advance_map(map: &mut [Vec<String>], line_to_advance: usize) {
     let previous_row = map[line_to_advance - 1].clone();
-    let mut current_row_copy = map[line_to_advance].clone();
-    for (index, &char) in previous_row.iter().enumerate() {
-        if char == '|' || char == 'S' {
-            if current_row_copy[index] != '^' {
-                current_row_copy[index] = '|';
-                map[line_to_advance] = current_row_copy;
-                return advance_map(map, line_to_advance + 1);
+    let current_row = &mut map[line_to_advance];
+    for (index, symbol) in previous_row.iter().enumerate() {
+        if let Ok(number) = symbol.parse::<u64>() {
+            if current_row[index] == "^" {
+                if index > 0 {
+                    let prev_value = current_row[index - 1].parse::<u64>().unwrap_or_default();
+                    current_row[index - 1] = (prev_value + number).to_string();
+                }
+                if index + 1 < current_row.len() {
+                    let prev_value = current_row[index + 1].parse::<u64>().unwrap_or_default();
+                    current_row[index + 1] = (prev_value + number).to_string()
+                }
+            } else {
+                let prev_value = current_row[index].parse::<u64>().unwrap_or_default();
+                current_row[index] = (prev_value + number).to_string();
             }
-
-            let mut count = 0;
-
-            if index > 0 {
-                let mut row_clone = current_row_copy.clone();
-                row_clone[index - 1] = '|';
-                let mut map = map.clone();
-                map[line_to_advance] = row_clone;
-                count += advance_map(map, line_to_advance + 1);
-            };
-
-            if index + 1 < current_row_copy.len() {
-                let mut row_clone = current_row_copy.clone();
-                row_clone[index + 1] = '|';
-                let mut map = map.clone();
-                map[line_to_advance] = row_clone;
-                count += advance_map(map, line_to_advance + 1);
-            }
-            return count;
         }
     }
-
-    return 0;
 }
 
-fn print_map(map: &[Vec<char>]) {
+fn print_map(map: &[Vec<String>]) {
     for line in map {
         for symbol in line {
-            print!("{symbol}");
+            print!("{symbol:>2}");
         }
         println!("");
     }
